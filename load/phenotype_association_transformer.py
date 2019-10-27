@@ -135,6 +135,7 @@ if __name__ == '__main__':
         df[['gene1', 'gene2']] = df.entrez_gene.str.split("_#_", expand = True)
         print(df.head())
         
+        split_count=1
         for index, row in df.iterrows():
             # print(row.mgi, row.phenotype, row.gene1, row.gene2)
             phenotype = store.resource(str(OBO.uri) + row.phenotype)
@@ -164,8 +165,14 @@ if __name__ == '__main__':
                 add_association_provenance(store, association, creator='Senay Kafkas', 
                     created_on='2019-01-06', source='https://www.ncbi.nlm.nih.gov/pubmed/30809638')
 
-        store.serialize(f'{DATA_FOLDER}/gene2phenotype_textmined.rdf', format="pretty-xml", max_depth=3)
-        print(len(store))
+            if index > 0 and index % 1_50_000 == 0:
+                store.serialize(f'{DATA_FOLDER}/gene2phenotype_textmined-{split_count}.rdf', format="pretty-xml", max_depth=3)
+                print(len(store))
+                store.remove((None, None, None))
+                split_count += 1
+
+        split_count += 1
+        store.serialize(f'{DATA_FOLDER}/gene2phenotype_textmined-{split_count}.rdf', format="pretty-xml", max_depth=3)
         store.remove((None, None, None))
         del df
     
@@ -244,18 +251,23 @@ if __name__ == '__main__':
             association.add(OBO.RO_0002558, OBO.ECO_0007669)
             add_association_provenance(store, association, creator='Maxat Kulmanov', created_on='2019-10-20')
 
-            if index > 0 and index % 5_00_000 == 0:
-                store.serialize(f'{DATA_FOLDER}/predictive_gene2phenotype-{split_count}.rdf', format="pretty-xml", max_depth=3)
+            if index > 0 and index % 2_00_000 == 0:
+                store.serialize(f'{DATA_FOLDER}/predictive_gene2phenotype-sm-{split_count}.rdf', format="pretty-xml", max_depth=3)
                 print(len(store))
                 store.remove((None, None, None))
                 split_count += 1
 
-        split_count += 1
-        store.serialize(f'{DATA_FOLDER}/predictive_gene2phenotype-{split_count}.rdf', format="pretty-xml", max_depth=3)
+        store.serialize(f'{DATA_FOLDER}/predictive_gene2phenotype-sm-{split_count}.rdf', format="pretty-xml", max_depth=3)
         print(len(store))
         store.remove((None, None, None))
         del df
     
+    def print_size(file):
+        store = create_graph()
+        filePath=f'{DATA_FOLDER}/{file}'
+        store.load(filePath)
+        print(len(store))
+
     transform_disease2phenotype()
     transform_drug2phenotype()
     transform_gene2phenotype_text_mined()
